@@ -47,21 +47,22 @@ RayHit intersectScene(Ray ray)
 float3 shadeHit(Ray ray, RayHit hit)
 {
 	float3 n = hit.normal;
-	float3 v = normalize(hit.position - _WorldSpaceCameraPos.xyz);
+	float3 v = normalize(_WorldSpaceCameraPos.xyz - hit.position);
     float3 l = normalize(_WorldSpaceLightPos0.xyz);
 	float shininess = 50;
 	float3 albedo = hit.material.albedo;
 
 	// shadow rays
-	Ray shadowRay = CreateRay(hit.position, _WorldSpaceLightPos0 - hit.position, 1);
-	//RayHit shadowRayHit = intersectScene(shadowRay);
+	float3 shadowRayOrigin = hit.position + EPS * hit.normal;
+	Ray shadowRay = CreateRay(shadowRayOrigin, -_DirectionalLight.xyz , 1);
+	RayHit shadowRayHit = intersectScene(shadowRay);
 	
-	//if (isinf(shadowRayHit.distance)) // didn't detect a hit
-   // { 
-        return blinnPhong(n, v, l, shininess , albedo);
-  //  }
-//	return float3(0,0,0);
-	
+	//return blinnPhong(n, v, l, shininess , albedo);
+	if (isinf(shadowRayHit.distance)) // didn't detect a hit
+    { 
+		return blinnPhong(n, v, l, shininess , albedo);
+    }
+	return float3(0,0,0);
 }
 
 // Returns the color associated with the given ray that has missed all geometry

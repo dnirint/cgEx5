@@ -19,6 +19,11 @@ void intersectSphere(Ray ray, inout RayHit bestHit, Material material, float4 sp
         return;
     }
     float t = (-B - sqrt(D))/(2);
+	if (t <= 0)
+	{
+		return;
+	}
+	
     if (t < bestHit.distance) // found a better hit
     {
         bestHit.distance = t;
@@ -41,6 +46,10 @@ void intersectPlane(Ray ray, inout RayHit bestHit, Material material, float3 c, 
 		return;
 	}
 	float t = (-dot((o-c), n)) / (dot(d, n));
+	if (t <= 0)
+	{
+		return;
+	}
 	if (t < bestHit.distance) // found a better hit
     {
 		bestHit.distance = t;
