@@ -123,14 +123,14 @@ void intersectCircle(Ray ray, inout RayHit bestHit, Material material, float4 ci
         return;
     }
 	
-	float3 distanceToCenter = length(planeHit.position - circle.xyz);
+	float distanceToCenter = length(planeHit.position - circle.xyz);
 	if (distanceToCenter < radius) // the hitpoint is indeed inside the circle
     {
         if (planeHit.distance < bestHit.distance) //nothing is in front of the circle 
         {
             bestHit.distance = planeHit.distance;
             bestHit.position = planeHit.position;
-            bestHit.normal = normal;
+            bestHit.normal = n;
             bestHit.material = material;
         }
     }
@@ -162,20 +162,20 @@ void intersectCylinderY(Ray ray, inout RayHit bestHit, Material material, float4
 	
 	float a = dx * dx + dz * dz;
 	float b = 2 * (ox * dx - cx * dx + oz * dz - cz * dz);
-	float c = ox * ox + cx * cx + oz * oz + cz * cz - 2 * (oc * cx + oz * cz) - radius;
+	float c = ox * ox + cx * cx + oz * oz + cz * cz - 2 * (ox * cx + oz * cz) - radius;
 	
 	float discriminant = b * b - 4 * a * c;
 	if (discriminant > 0) // there is intersection with infinite cylinder
 	{
-		float t = (-b - sqrt(discriminant)/ (2 * a);
+		float t = (-b - sqrt(discriminant))/ (2 * a);
 		float3 cylinderHitLocation = ray.origin + ray.direction * t;
 		// check intersection with finite cylinder
 		if (abs(cylinderHitLocation.y - cylinder.y) < h)
 		{
 			if (t < bestHit.distance) 
 			{
-				bestHit.distance = planeHit.distance;
-				bestHit.position = planeHit.position;
+				bestHit.distance = t;
+				bestHit.position = cylinderHitLocation;
 				bestHit.normal = normal;
 				bestHit.material = material;
 			}
