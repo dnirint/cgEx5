@@ -46,17 +46,16 @@ RayHit intersectScene(Ray ray)
 // Returns the color associated with the given ray and hit point 
 float3 shadeHit(Ray ray, RayHit hit)
 {
+    float3 lightDirection = normalize(-_DirectionalLight.xyz);
 	// move shadow ray by epsilon to avoid acne
 	float3 shadowRayOrigin = hit.position + EPS * hit.normal;
-	Ray shadowRay = CreateRay(shadowRayOrigin, -_DirectionalLight.xyz , 1);
-	RayHit shadowRayHit = intersectScene(shadowRay);
-	
+	Ray shadowRay = CreateRay(shadowRayOrigin, lightDirection, ray.energy);
+    RayHit shadowRayHit = intersectScene(shadowRay);
 	if (isinf(shadowRayHit.distance)) // didn't detect a hit, so it means the light source reaches the object
     { 
-        
         float3 n = normalize(hit.normal);
-	    float3 v = normalize(ray.origin - hit.position);
-        float3 l = normalize(-_DirectionalLight);
+	    float3 v = normalize(-ray.direction);
+        float3 l = lightDirection;
 	    float shininess = 50;
 	    float3 albedo = hit.material.albedo;
 		return blinnPhong(n, v, l, shininess , albedo)*ray.energy;
@@ -75,9 +74,7 @@ float3 shadeMiss(Ray ray)
 // Edits the given ray accordingly
 float3 trace(inout Ray ray)
 {
-    
     RayHit rayHit = intersectScene(ray);
-    
     if (isinf(rayHit.distance)) // didn't detect a hit
     { 
         float3 missColor = shadeMiss(ray);
@@ -85,10 +82,7 @@ float3 trace(inout Ray ray)
         return missColor;
     }
     float3 colorBeforeReflect = shadeHit(ray, rayHit);
-    // move ray by epsilon to avoid acne
-    rayHit.position = rayHit.position + EPS*rayHit.normal;
-    float refractiveIndex = rayHit.material.refractiveIndex;
-    if (refractiveIndex == -1)
+    if (rayHit.material.refractiveIndex == -1)
     {
         reflectRay(ray, rayHit);
     }
@@ -96,7 +90,6 @@ float3 trace(inout Ray ray)
     {
         refractRay(ray, rayHit);
     }
-    
     return colorBeforeReflect;
 }
 
@@ -117,11 +110,11 @@ void CSMain (uint3 id : SV_DispatchThreadID)
     Ray ray = CreateViewRay(uv);
     float3 result = float3(0,0,0);
     for (int i=0; i<_BounceLimit; i++){
-        if (any(ray.energy) <= 0)
+        result = result + trace(ray);
+        if (all(ray.energy) <= 0)
         {
             break;
         }
-        result = result + trace(ray);
         
         
     }
