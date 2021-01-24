@@ -176,8 +176,12 @@ void intersectCylinderY(Ray ray, inout RayHit bestHit, Material material, float4
 			{
 				bestHit.distance = t;
 				bestHit.position = cylinderHitLocation;
-				bestHit.normal = normal;
 				bestHit.material = material;
+				
+				// find normal
+				float3 axisPoint = cylinder.xyz;
+				axisPoint.y = cylinderHitLocation.y;
+				bestHit.normal = normalize(cylinderHitLocation - axisPoint);
 			}
 		}
 	}
