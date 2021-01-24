@@ -105,9 +105,6 @@ void intersectTriangle(Ray ray, inout RayHit bestHit, Material material, float3 
             bestHit.material = material;
         }
     }
-
-
-
 }
 
 
