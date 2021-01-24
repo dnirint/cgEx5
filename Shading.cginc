@@ -23,7 +23,27 @@ void reflectRay(inout Ray ray, RayHit hit)
 // Refracts the given ray from the given hit point
 void refractRay(inout Ray ray, RayHit hit)
 {
-    // Your implementation
+    float3 n = normalize(hit.normal);
+    float mu = hit.material.refractiveIndex;
+    float n_dot_i = dot(n,ray.direction);
+    if (n_dot_i<=0)
+    {
+        float mu = (1/mu);
+    }
+    else
+    {
+        n = -hit.normal;
+    }
+    
+    float3 i = ray.direction;
+    float c1 = abs(dot(n,i));
+    float first_pow = pow(mu,2);
+    float second_pow = 1-pow(c1,2);
+    float c2 = sqrt(1-(first_pow*second_pow));
+    float3 t = mu * i + (mu * c1 - c2) * n;
+    ray.origin = hit.position;
+    ray.direction = normalize(t);
+    
 }
 
 // Samples the _SkyboxTexture at a given direction vector

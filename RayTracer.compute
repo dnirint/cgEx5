@@ -46,21 +46,20 @@ RayHit intersectScene(Ray ray)
 // Returns the color associated with the given ray and hit point 
 float3 shadeHit(Ray ray, RayHit hit)
 {
-	float3 n = hit.normal;
-	float3 v = normalize(_WorldSpaceCameraPos.xyz - hit.position);
-    float3 l = normalize(_WorldSpaceLightPos0.xyz);
-	float shininess = 50;
-	float3 albedo = hit.material.albedo;
-
-	// shadow rays
+	// move shadow ray by epsilon to avoid acne
 	float3 shadowRayOrigin = hit.position + EPS * hit.normal;
 	Ray shadowRay = CreateRay(shadowRayOrigin, -_DirectionalLight.xyz , 1);
 	RayHit shadowRayHit = intersectScene(shadowRay);
 	
-	//return blinnPhong(n, v, l, shininess , albedo);
 	if (isinf(shadowRayHit.distance)) // didn't detect a hit, so it means the light source reaches the object
     { 
-		return blinnPhong(n, v, l, shininess , albedo);
+        
+        float3 n = normalize(hit.normal);
+	    float3 v = normalize(ray.origin - hit.position);
+        float3 l = normalize(-_DirectionalLight);
+	    float shininess = 50;
+	    float3 albedo = hit.material.albedo;
+		return blinnPhong(n, v, l, shininess , albedo)*ray.energy;
     }
 	return float3(0,0,0);
 }
@@ -68,7 +67,7 @@ float3 shadeHit(Ray ray, RayHit hit)
 // Returns the color associated with the given ray that has missed all geometry
 float3 shadeMiss(Ray ray)
 {
-    return sampleSkybox(ray.direction);
+    return sampleSkybox(ray.direction)*ray.energy;
 }
 
 // Traces the given ray in the currently selected scene
@@ -81,23 +80,24 @@ float3 trace(inout Ray ray)
     
     if (isinf(rayHit.distance)) // didn't detect a hit
     { 
-        float3 originalEnergy = ray.energy;
-        //ray.energy = float3(0,0,0);
-        return shadeMiss(ray)*originalEnergy;
+        float3 missColor = shadeMiss(ray);
+        ray.energy = float3(0,0,0);
+        return missColor;
     }
-    float3 shadeHitColor = shadeHit(ray, rayHit);
-    float3 colorBeforeReflect = shadeHitColor;
+    float3 colorBeforeReflect = shadeHit(ray, rayHit);
     // move ray by epsilon to avoid acne
-    rayHit.position = rayHit.position - EPS*rayHit.normal;
-    reflectRay(ray, rayHit);
-    RayHit reflectHit = intersectScene(ray);
-    if (isinf(reflectHit.distance)) // reflection hit nothing
+    rayHit.position = rayHit.position + EPS*rayHit.normal;
+    float refractiveIndex = rayHit.material.refractiveIndex;
+    if (refractiveIndex == -1)
     {
-        return colorBeforeReflect + shadeMiss(ray)*ray.energy;
+        reflectRay(ray, rayHit);
     }
-    float3 reflectionHitColor = shadeHit(ray, reflectHit);
-
-    return reflectionHitColor*ray.energy + colorBeforeReflect;
+    else
+    {
+        refractRay(ray, rayHit);
+    }
+    
+    return colorBeforeReflect;
 }
 
 // Creates and traces a view ray for each image pixel, then sets the
@@ -115,15 +115,17 @@ void CSMain (uint3 id : SV_DispatchThreadID)
 
     // Create a view ray and trace it
     Ray ray = CreateViewRay(uv);
-    float3 result = trace(ray);
-    for (int i=0; i<_BounceLimit-1; i++){
+    float3 result = float3(0,0,0);
+    for (int i=0; i<_BounceLimit; i++){
         if (any(ray.energy) <= 0)
         {
             break;
         }
-        float3 result = result + trace(ray);
+        result = result + trace(ray);
+        
         
     }
+    
         
     
     // Set pixel color

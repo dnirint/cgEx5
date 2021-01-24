@@ -36,13 +36,14 @@ void intersectSphere(Ray ray, inout RayHit bestHit, Material material, float4 sp
 // The plane passes through point c and has a surface normal n
 void intersectPlane(Ray ray, inout RayHit bestHit, Material material, float3 c, float3 n)
 {
-	float3 d = ray.direction;
+	float3 d = normalize(ray.direction);
 	float3 o = ray.origin;
-    if (dot(d, n) == 0)
+    float d_dot_n = dot(d,n);
+    if (d_dot_n == 0)
 	{
 		return;
 	}
-	float t = (-dot((o-c), n)) / (dot(d, n));
+	float t = (-dot((o-c), n)) / (d_dot_n);
 	if (t <= 0)
 	{
 		return;
@@ -50,8 +51,8 @@ void intersectPlane(Ray ray, inout RayHit bestHit, Material material, float3 c, 
 	if (t < bestHit.distance) // found a better hit
     {
 		bestHit.distance = t;
-        bestHit.position = ray.origin + t * ray.direction;
-        bestHit.normal = n;
+        bestHit.position = ray.origin + t * normalize(ray.direction);
+        bestHit.normal = normalize(n);
         bestHit.material = material;
 	}
 }
@@ -61,7 +62,17 @@ void intersectPlane(Ray ray, inout RayHit bestHit, Material material, float3 c, 
 // The material returned is either m1 or m2 in a way that creates a checkerboard pattern 
 void intersectPlaneCheckered(Ray ray, inout RayHit bestHit, Material m1, Material m2, float3 c, float3 n)
 {
-    // Your implementation
+    intersectPlane(ray, bestHit, m2, c, n);
+    float bestHitX = bestHit.position.x;
+    float bestHitZ = bestHit.position.z;
+    float xfloor = floor(bestHitX);
+    float zfloor = floor(bestHitZ);
+    float xFrac = bestHitX - xfloor;
+    float zFrac = bestHitZ - zfloor;
+    if (xFrac<0.5 && zFrac<0.5 || xFrac>0.5 && zFrac>0.5)
+    {
+        bestHit.material = m1;
+    }
 }
 
 
@@ -69,9 +80,9 @@ void intersectPlaneCheckered(Ray ray, inout RayHit bestHit, Material m1, Materia
 // The triangle is defined by points a, b, c
 void intersectTriangle(Ray ray, inout RayHit bestHit, Material material, float3 a, float3 b, float3 c)
 {
-    float3 ab = b-a;
-    float3 bc = c-b;
-    float3 normal = normalize(cross(ab,bc));
+    float3 ba = normalize(b-a);
+    float3 ca = normalize(c-a);
+    float3 normal = normalize(cross(ba,ca));
     RayHit planeHit = CreateRayHit();
     
     intersectPlane(ray, planeHit, material, a, normal);
