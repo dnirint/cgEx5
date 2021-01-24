@@ -72,7 +72,34 @@ void intersectPlaneCheckered(Ray ray, inout RayHit bestHit, Material m1, Materia
 // The triangle is defined by points a, b, c
 void intersectTriangle(Ray ray, inout RayHit bestHit, Material material, float3 a, float3 b, float3 c)
 {
-    // Your implementation
+    float3 ab = b-a;
+    float3 bc = c-b;
+    float3 normal = normalize(cross(ab,bc));
+    RayHit planeHit = CreateRayHit();
+    
+    intersectPlane(ray, planeHit, material, a, normal);
+    if (isinf(planeHit.distance)) // we didn't hit the plane that contains the triangle
+    {
+        return;
+    }
+    // check if the hit point is inside the triangle
+    float c1 = dot(cross((b-a),(planeHit.position-a)),normal);
+    float c2 = dot(cross((c-b),(planeHit.position-b)),normal);
+    float c3 = dot(cross((a-c),(planeHit.position-c)),normal);
+    if (c1>=0 && c2>=0 && c3>=0) // the hitpoint is indeed inside the triangle
+    {
+        
+        if (planeHit.distance < bestHit.distance)
+        {
+            bestHit.distance = planeHit.distance;
+            bestHit.position = planeHit.position;
+            bestHit.normal = normal;
+            bestHit.material = material;
+        }
+    }
+
+
+
 }
 
 

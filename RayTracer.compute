@@ -86,9 +86,22 @@ float3 trace(inout Ray ray)
         return shadeMiss(ray)*originalEnergy;
     }
     float3 shadeHitColor = shadeHit(ray, rayHit);
-    float3 appliedEnergyToColor = shadeHitColor * ray.energy;
+    float3 colorBeforeReflect = shadeHitColor;
+    //float3 colorBeforeReflect = shadeHitColor * ray.energy;
+    return colorBeforeReflect;
+    // move ray by epsilon to avoid acne
+    rayHit.position = rayHit.position - EPS*rayHit.normal;
+    reflectRay(ray, rayHit);
+    RayHit reflectHit = intersectScene(ray);
+    if (isinf(rayHit.distance)) // reflection hit nothing
+    {
+        return colorBeforeReflect;
+        //return colorBeforeReflect + shadeMiss(ray);
+    }
+    float3 reflectionHitColor = shadeHit(ray, reflectHit);
 
-    return appliedEnergyToColor;
+    //return colorBeforeReflect;
+    return reflectionHitColor*ray.energy + colorBeforeReflect;
 }
 
 // Creates and traces a view ray for each image pixel, then sets the

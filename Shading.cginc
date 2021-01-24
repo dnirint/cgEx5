@@ -11,7 +11,13 @@ float3 blinnPhong(float3 n, float3 v, float3 l, float shininess, float3 albedo)
 // Reflects the given ray from the given hit point
 void reflectRay(inout Ray ray, RayHit hit)
 {
-    // Your implementation
+    // reflection direction: r=2(vn)n-v
+    float3 v = normalize(_WorldSpaceCameraPos.xyz - hit.position);
+    float3 n = normalize(hit.normal);
+    float3 reflectionDirection = 2 * (dot(v,n)) * n - v;
+    ray.origin = hit.position;
+    ray.direction = reflectionDirection;
+    ray.energy = ray.energy*hit.material.specular;
 }
 
 // Refracts the given ray from the given hit point
