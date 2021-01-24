@@ -14,7 +14,7 @@ void reflectRay(inout Ray ray, RayHit hit)
     // reflection direction: r=2(vn)n-v
     float3 v = normalize(_WorldSpaceCameraPos.xyz - hit.position);
     float3 n = normalize(hit.normal);
-    float3 reflectionDirection = 2 * (dot(v,n)) * n - v;
+    float3 reflectionDirection = normalize(2 * (dot(v,n)) * n - v);
     ray.origin = hit.position;
     ray.direction = reflectionDirection;
     ray.energy = ray.energy*hit.material.specular;

@@ -58,7 +58,7 @@ float3 shadeHit(Ray ray, RayHit hit)
 	RayHit shadowRayHit = intersectScene(shadowRay);
 	
 	//return blinnPhong(n, v, l, shininess , albedo);
-	if (isinf(shadowRayHit.distance)) // didn't detect a hit
+	if (isinf(shadowRayHit.distance)) // didn't detect a hit, so it means the light source reaches the object
     { 
 		return blinnPhong(n, v, l, shininess , albedo);
     }
@@ -78,29 +78,25 @@ float3 trace(inout Ray ray)
 {
     
     RayHit rayHit = intersectScene(ray);
-
+    
     if (isinf(rayHit.distance)) // didn't detect a hit
     { 
         float3 originalEnergy = ray.energy;
-        ray.energy = float3(0,0,0);
+        //ray.energy = float3(0,0,0);
         return shadeMiss(ray)*originalEnergy;
     }
     float3 shadeHitColor = shadeHit(ray, rayHit);
     float3 colorBeforeReflect = shadeHitColor;
-    //float3 colorBeforeReflect = shadeHitColor * ray.energy;
-    return colorBeforeReflect;
     // move ray by epsilon to avoid acne
     rayHit.position = rayHit.position - EPS*rayHit.normal;
     reflectRay(ray, rayHit);
     RayHit reflectHit = intersectScene(ray);
-    if (isinf(rayHit.distance)) // reflection hit nothing
+    if (isinf(reflectHit.distance)) // reflection hit nothing
     {
-        return colorBeforeReflect;
-        //return colorBeforeReflect + shadeMiss(ray);
+        return colorBeforeReflect + shadeMiss(ray)*ray.energy;
     }
     float3 reflectionHitColor = shadeHit(ray, reflectHit);
 
-    //return colorBeforeReflect;
     return reflectionHitColor*ray.energy + colorBeforeReflect;
 }
 
@@ -120,6 +116,15 @@ void CSMain (uint3 id : SV_DispatchThreadID)
     // Create a view ray and trace it
     Ray ray = CreateViewRay(uv);
     float3 result = trace(ray);
+    for (int i=0; i<_BounceLimit-1; i++){
+        if (any(ray.energy) <= 0)
+        {
+            break;
+        }
+        float3 result = result + trace(ray);
+        
+    }
+        
     
     // Set pixel color
     Result[id.xy] = float4(result, 1);

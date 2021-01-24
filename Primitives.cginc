@@ -7,13 +7,10 @@ void intersectSphere(Ray ray, inout RayHit bestHit, Material material, float4 sp
     float3 rayToOriginDirection = ray.origin-center;
 
     float A = 1;
-    //B = 2(o-c)d
     float B = 2 * dot(rayToOriginDirection,ray.direction);
-    //C = (o-c)(o-c)-r^2
     float C = dot(rayToOriginDirection,rayToOriginDirection) - pow(r,2);
     
-    float D = dot(B,B)-4*(dot(A,C));
-
+    float D = B*B-4*A*C;
     if (D <= 0) // no intersection
     {
         return;
@@ -28,7 +25,7 @@ void intersectSphere(Ray ray, inout RayHit bestHit, Material material, float4 sp
     {
         bestHit.distance = t;
         bestHit.position = ray.origin + t * ray.direction;
-        bestHit.normal = bestHit.position - center;
+        bestHit.normal = normalize(bestHit.position - center);
         bestHit.material = material;
     }
     
